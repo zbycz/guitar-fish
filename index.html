@@ -2,8 +2,18 @@
 <html lang="cs">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Kytarová ladička</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="description" content="Přesná kytarová ladička pracující zcela offline v prohlížeči.">
+<meta name="theme-color" content="#f7f6f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1c1c1a" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ladička">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <style>
   :root {
     --bg: #f7f6f2; --surface: #ffffff; --surface-1: #f1efe8;
@@ -20,9 +30,12 @@
     }
   }
   * { box-sizing: border-box; }
-  body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  body { margin: 0; min-height: 100vh; min-height: 100dvh; display: flex; align-items: center; justify-content: center;
     background: var(--bg); color: var(--text-primary);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 1rem; }
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: calc(1rem + env(safe-area-inset-top)) calc(1rem + env(safe-area-inset-right))
+             calc(1rem + env(safe-area-inset-bottom)) calc(1rem + env(safe-area-inset-left));
+    -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
   .card { width: 100%; max-width: 460px; background: var(--surface);
     border: 0.5px solid var(--border); border-radius: 16px; padding: 2rem 1.5rem; text-align: center; }
   h1 { font-size: 18px; font-weight: 500; margin: 0 0 1.25rem; color: var(--text-secondary); }
