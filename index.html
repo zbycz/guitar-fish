@@ -1,0 +1,219 @@
+Content is user-generated and unverified.
+
+
+1
+Learn how to customize
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kytarová ladička</title>
+<style>
+  :root {
+    --bg: #f7f6f2;
+    --surface: #ffffff;
+    --surface-1: #f1efe8;
+    --text-primary: #2c2c2a;
+    --text-secondary: #5f5e5a;
+    --text-muted: #888780;
+    --border: rgba(0,0,0,0.10);
+    --border-strong: rgba(0,0,0,0.22);
+    --success-bg: #e1f5ee;
+    --success-text: #0f6e56;
+    --success-border: #5dcaa5;
+    --accent: #1d9e75;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1a;
+      --surface: #262624;
+      --surface-1: #2f2f2c;
+      --text-primary: #ececec;
+      --text-secondary: #b4b2a9;
+      --text-muted: #888780;
+      --border: rgba(255,255,255,0.12);
+      --border-strong: rgba(255,255,255,0.24);
+      --success-bg: #085041;
+      --success-text: #9fe1cb;
+      --success-border: #1d9e75;
+      --accent: #5dcaa5;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: 1rem;
+  }
+  .card {
+    width: 100%;
+    max-width: 440px;
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem 1.5rem;
+    text-align: center;
+  }
+  h1 { font-size: 18px; font-weight: 500; margin: 0 0 1.5rem; color: var(--text-secondary); }
+  #note { font-size: 76px; font-weight: 500; color: var(--text-muted); line-height: 1; margin-bottom: 4px; }
+  #freq { font-size: 14px; color: var(--text-secondary); margin-bottom: 20px; }
+  #cents { font-size: 14px; color: var(--text-secondary); margin-bottom: 20px; min-height: 20px; }
+  .gauge { position: relative; height: 90px; margin-bottom: 20px; }
+  .gauge svg { width: 100%; height: 100%; }
+  .strings { display: flex; gap: 8px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; }
+  .strbtn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px; border-radius: 50%;
+    border: 0.5px solid var(--border-strong);
+    font-size: 14px; color: var(--text-secondary);
+    background: var(--surface-1); transition: all 0.15s;
+  }
+  .strbtn.active { background: var(--success-bg); color: var(--success-text); border-color: var(--success-border); }
+  button {
+    width: 150px; height: 44px; font-size: 15px;
+    border-radius: 10px; border: 0.5px solid var(--border-strong);
+    background: var(--surface-1); color: var(--text-primary);
+    cursor: pointer; transition: all 0.15s;
+  }
+  button:hover { border-color: var(--accent); }
+  button:active { transform: scale(0.98); }
+  .hint { font-size: 12px; color: var(--text-muted); margin-top: 16px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Kytarová ladička</h1>
+  <div id="note">–</div>
+  <div id="freq">stiskni start a zahraj strunu</div>
+
+  <div class="gauge">
+    <svg viewBox="0 0 400 90">
+      <line x1="200" y1="10" x2="200" y2="60" stroke="var(--border-strong)" stroke-width="1.5"/>
+      <line x1="60" y1="35" x2="340" y2="35" stroke="var(--border)" stroke-width="1"/>
+      <line x1="130" y1="30" x2="130" y2="40" stroke="var(--border)" stroke-width="1"/>
+      <line x1="270" y1="30" x2="270" y2="40" stroke="var(--border)" stroke-width="1"/>
+      <polygon id="needle" points="200,58 195,72 205,72" fill="var(--text-muted)" style="transition: transform 0.08s linear, fill 0.15s;"/>
+      <text x="60" y="82" font-size="11" fill="var(--text-muted)" text-anchor="middle">-50</text>
+      <text x="200" y="82" font-size="11" fill="var(--text-muted)" text-anchor="middle">0</text>
+      <text x="340" y="82" font-size="11" fill="var(--text-muted)" text-anchor="middle">+50 ct</text>
+    </svg>
+  </div>
+
+  <div id="cents"></div>
+
+  <div class="strings">
+    <span data-str="E2" class="strbtn">E</span>
+    <span data-str="A2" class="strbtn">A</span>
+    <span data-str="D3" class="strbtn">D</span>
+    <span data-str="G3" class="strbtn">G</span>
+    <span data-str="B3" class="strbtn">B</span>
+    <span data-str="E4" class="strbtn">e</span>
+  </div>
+
+  <button id="toggle">Start</button>
+  <div class="hint">Vyžaduje mikrofon a HTTPS připojení</div>
+</div>
+
+<script>
+(function(){
+  const NOTES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+  const noteEl = document.getElementById('note');
+  const freqEl = document.getElementById('freq');
+  const centsEl = document.getElementById('cents');
+  const needle = document.getElementById('needle');
+  const btn = document.getElementById('toggle');
+  const strBtns = [...document.querySelectorAll('.strbtn')];
+  let audioCtx, analyser, buf, rafId, stream, running = false;
+
+  function freqToNote(f){
+    const n = 12 * (Math.log2(f/440)) + 69;
+    const rounded = Math.round(n);
+    const name = NOTES[((rounded % 12) + 12) % 12];
+    const octave = Math.floor(rounded/12) - 1;
+    const refFreq = 440 * Math.pow(2, (rounded-69)/12);
+    const cents = Math.floor(1200 * Math.log2(f/refFreq));
+    return { name, octave, cents, id: name+octave };
+  }
+
+  function autoCorrelate(buffer, sampleRate){
+    let SIZE = buffer.length, rms = 0;
+    for(let i=0;i<SIZE;i++){ rms += buffer[i]*buffer[i]; }
+    rms = Math.sqrt(rms/SIZE);
+    if(rms < 0.01) return -1;
+    let r1=0, r2=SIZE-1, thres=0.2;
+    for(let i=0;i<SIZE/2;i++){ if(Math.abs(buffer[i])<thres){ r1=i; break; } }
+    for(let i=1;i<SIZE/2;i++){ if(Math.abs(buffer[SIZE-i])<thres){ r2=SIZE-i; break; } }
+    buffer = buffer.slice(r1,r2); SIZE = buffer.length;
+    const c = new Array(SIZE).fill(0);
+    for(let i=0;i<SIZE;i++) for(let j=0;j<SIZE-i;j++) c[i]+=buffer[j]*buffer[j+i];
+    let d=0; while(c[d]>c[d+1]) d++;
+    let maxval=-1, maxpos=-1;
+    for(let i=d;i<SIZE;i++){ if(c[i]>maxval){ maxval=c[i]; maxpos=i; } }
+    let T0 = maxpos;
+    if(T0<1) return -1;
+    const x1=c[T0-1], x2=c[T0], x3=c[T0+1];
+    const a=(x1+x3-2*x2)/2, b=(x3-x1)/2;
+    if(a) T0 = T0 - b/(2*a);
+    return sampleRate/T0;
+  }
+
+  function update(){
+    analyser.getFloatTimeDomainData(buf);
+    const f = autoCorrelate(buf, audioCtx.sampleRate);
+    if(f > 60 && f < 1200){
+      const n = freqToNote(f);
+      noteEl.textContent = n.name;
+      noteEl.style.color = 'var(--text-primary)';
+      freqEl.textContent = f.toFixed(1) + ' Hz · ' + n.id;
+      const clamped = Math.max(-50, Math.min(50, n.cents));
+      needle.setAttribute('transform', 'rotate('+(clamped*0.9)+' 200 60)');
+      const inTune = Math.abs(n.cents) <= 5;
+      needle.setAttribute('fill', inTune ? 'var(--success-text)' : 'var(--text-primary)');
+      if(inTune){ centsEl.textContent = '✓ naladěno'; centsEl.style.color = 'var(--success-text)'; }
+      else { centsEl.textContent = (n.cents>0?'+':'') + n.cents + ' ct · ' + (n.cents>0?'povol':'utáhni'); centsEl.style.color = 'var(--text-secondary)'; }
+      strBtns.forEach(b => b.classList.toggle('active', b.dataset.str === n.id));
+    } else {
+      noteEl.style.color = 'var(--text-muted)';
+      centsEl.textContent = '';
+    }
+    rafId = requestAnimationFrame(update);
+  }
+
+  async function start(){
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation:false, noiseSuppression:false, autoGainControl:false } });
+      audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 2048;
+      buf = new Float32Array(analyser.fftSize);
+      audioCtx.createMediaStreamSource(stream).connect(analyser);
+      running = true; btn.textContent = 'Stop';
+      update();
+    } catch(e){
+      freqEl.textContent = 'mikrofon nedostupný: ' + e.message;
+    }
+  }
+  function stop(){
+    running = false; btn.textContent = 'Start';
+    cancelAnimationFrame(rafId);
+    if(stream) stream.getTracks().forEach(t=>t.stop());
+    if(audioCtx) audioCtx.close();
+    noteEl.textContent = '–'; noteEl.style.color = 'var(--text-muted)';
+    freqEl.textContent = 'stiskni start a zahraj strunu';
+    centsEl.textContent = '';
+    strBtns.forEach(b=>b.classList.remove('active'));
+    needle.setAttribute('transform',''); needle.setAttribute('fill','var(--text-muted)');
+  }
+  btn.addEventListener('click', ()=> running ? stop() : start());
+})();
+</script>
+</body>
+</html>
+Link copied
