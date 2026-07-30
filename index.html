@@ -63,6 +63,9 @@
   button:hover { border-color: var(--accent); }
   button:active { transform: scale(0.98); }
   .hint { font-size: 12px; color: var(--text-muted); margin-top: 16px; }
+  #install { display: none; width: auto; height: 36px; padding: 0 18px; margin-top: 16px;
+    font-size: 13px; color: var(--success-text); background: var(--success-bg); border-color: var(--success-border); }
+  #install.show { display: inline-flex; align-items: center; justify-content: center; }
 </style>
 </head>
 <body>
@@ -95,7 +98,8 @@
 
   <button id="toggle">Start</button>
   <div class="hint">Světlé body = syrové měření, silná stopa = vyhlazená hodnota</div>
-  <div class="hint">Vyžaduje mikrofon a HTTPS připojení</div>
+  <div class="hint" id="reqhint">Vyžaduje mikrofon a HTTPS · funguje i offline</div>
+  <button id="install">Nainstalovat na plochu</button>
 </div>
 
 <script>
@@ -342,6 +346,40 @@
   }
   btn.addEventListener('click', ()=> running ? stop() : start());
   drawTrace();
+})();
+</script>
+
+<script>
+(function(){
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', ()=> navigator.serviceWorker.register('sw.js').catch(()=>{}));
+  }
+
+  const installBtn = document.getElementById('install');
+  const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  let deferred = null;
+
+  window.addEventListener('beforeinstallprompt', (e)=>{
+    e.preventDefault();
+    deferred = e;
+    installBtn.classList.add('show');
+  });
+  installBtn.addEventListener('click', async ()=>{
+    if(!deferred) return;
+    installBtn.classList.remove('show');
+    deferred.prompt();
+    await deferred.userChoice;
+    deferred = null;
+  });
+  window.addEventListener('appinstalled', ()=>{
+    deferred = null;
+    installBtn.classList.remove('show');
+  });
+
+  if(/iP(hone|ad|od)/.test(navigator.userAgent) && !standalone){
+    document.getElementById('reqhint')
+      .insertAdjacentHTML('afterend', '<div class="hint">Instalace: Sdílet → Přidat na plochu</div>');
+  }
 })();
 </script>
 </body>
