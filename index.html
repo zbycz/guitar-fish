@@ -99,17 +99,34 @@
   let audioCtx, analyser, buf, sig, dec, decimation = 1, rafId, stream, running = false;
   let history = [];
   let recent = [];
-  const MEDIAN_WINDOW = 12;
+  let lockedMidi = null, lastGoodAt = 0, shown = null;
   const MIN_FREQ = 60, MAX_FREQ = 1300;
   const RMS_GATE = 0.008, CLARITY_GATE = 0.55, PEAK_RATIO = 0.9;
+  const WINDOW_MS = 450, CONSENSUS = 0.6, TRIM = 0.25, HOLD_MS = 700, RELOCK_CENTS = 65;
 
   function cssVar(name){ return getComputedStyle(document.body).getPropertyValue(name).trim() || '#888'; }
 
-  function median(arr){
+  function trimmedMean(arr){
     if(!arr.length) return null;
     const s = [...arr].sort((a,b)=>a-b);
-    const m = Math.floor(s.length/2);
-    return s.length % 2 ? s[m] : (s[m-1]+s[m])/2;
+    const k = Math.floor(s.length * TRIM);
+    const t = s.length - 2*k >= 1 ? s.slice(k, s.length - k) : s;
+    return t.reduce((a,b)=>a+b, 0) / t.length;
+  }
+
+  function stabilize(now){
+    while(recent.length && now - recent[0].t > WINDOW_MS) recent.shift();
+    if(recent.length < 3) return null;
+
+    const counts = new Map();
+    for(const r of recent) counts.set(r.note, (counts.get(r.note) || 0) + 1);
+    let modeNote = null, modeCount = 0;
+    for(const [note, c] of counts){ if(c > modeCount){ modeCount = c; modeNote = note; } }
+    if(modeCount / recent.length < CONSENSUS) return null;
+
+    const pitch = trimmedMean(recent.filter(r => r.note === modeNote).map(r => r.pitch));
+    if(lockedMidi === null || Math.abs(pitch - lockedMidi) * 100 > RELOCK_CENTS) lockedMidi = modeNote;
+    return { pitch: pitch, midi: lockedMidi, cents: (pitch - lockedMidi) * 100 };
   }
 
   function freqFromMidi(m){ return 440 * Math.pow(2,(m-69)/12); }
@@ -210,7 +227,7 @@
     const good = cssVar('--success-text');
     const off = cssVar('--text-primary');
     for(let i=0;i<history.length;i++){
-      const h = history[i];
+      const h = history[i].smooth;
       if(h === null) continue;
       const y = history.length - 1 - i;
       if(y >= H) continue;
@@ -224,42 +241,46 @@
   }
 
   function update(){
+    const now = performance.now();
     analyser.getFloatTimeDomainData(buf);
     const det = detectPitch();
+    let rawPitch = null;
+
     if(det){
-      const f = det.freq;
-      const inst = freqToNote(f);
-      const refInst = freqFromMidi(inst.midi);
-      const instCents = 1200 * Math.log2(f / refInst);
+      rawPitch = 69 + 12 * Math.log2(det.freq/440);
+      recent.push({ t: now, pitch: rawPitch, note: Math.round(rawPitch) });
+      lastGoodAt = now;
+    }
 
-      recent.push({ midi: inst.midi, cents: instCents });
-      if(recent.length > MEDIAN_WINDOW) recent.shift();
+    const res = stabilize(now);
+    if(res) shown = res;
 
-      const midiMed = median(recent.map(r=>r.midi));
-      const targetMidi = Math.round(midiMed);
-      const centsMed = median(recent.filter(r=>r.midi===targetMidi).map(r=>r.cents));
-
-      const name = NOTES[((targetMidi % 12) + 12) % 12];
-      const octave = Math.floor(targetMidi/12) - 1;
-      const cents = Math.round(centsMed);
+    if(shown && now - lastGoodAt < HOLD_MS){
+      const name = NOTES[((shown.midi % 12) + 12) % 12];
+      const octave = Math.floor(shown.midi/12) - 1;
+      const cents = Math.round(shown.cents);
 
       noteEl.textContent = name; noteEl.style.color = 'var(--text-primary)';
-      freqEl.textContent = f.toFixed(1) + ' Hz · ' + name + octave;
-      const clamped = Math.max(-50, Math.min(50, centsMed));
+      freqEl.textContent = freqFromMidi(shown.pitch).toFixed(1) + ' Hz · ' + name + octave;
+      const clamped = Math.max(-50, Math.min(50, shown.cents));
       slider.style.left = (50 + (clamped/50)*40) + '%';
       const inTune = Math.abs(cents) <= 4;
       slider.style.background = inTune ? 'var(--success-text)' : 'var(--text-primary)';
       centsEl.textContent = inTune ? '✓ naladěno' : ((cents>0?'+':'') + cents + ' ct');
       centsEl.style.color = inTune ? 'var(--success-text)' : 'var(--text-primary)';
       strBtns.forEach(b => b.classList.toggle('active', b.dataset.str === name+octave));
-      history.push(instCents);
     } else {
-      noteEl.style.color = 'var(--text-muted)';
+      shown = null; lockedMidi = null;
+      noteEl.textContent = '–'; noteEl.style.color = 'var(--text-muted)';
       centsEl.textContent = '– ct'; centsEl.style.color = 'var(--text-muted)';
       slider.style.background = 'var(--text-muted)';
-      history.push(null);
-      if(recent.length) recent.shift();
+      strBtns.forEach(b => b.classList.remove('active'));
     }
+
+    history.push({
+      raw: rawPitch !== null && lockedMidi !== null ? (rawPitch - lockedMidi) * 100 : null,
+      smooth: shown ? shown.cents : null
+    });
     if(history.length > H) history.shift();
     drawTrace();
     rafId = requestAnimationFrame(update);
@@ -277,7 +298,8 @@
       sig = new Float32Array(analyser.fftSize);
       dec = new Float32Array(analyser.fftSize / decimation);
       audioCtx.createMediaStreamSource(stream).connect(analyser);
-      running = true; btn.textContent = 'Stop'; history = []; recent = [];
+      running = true; btn.textContent = 'Stop';
+      history = []; recent = []; lockedMidi = null; shown = null; lastGoodAt = 0;
       update();
     } catch(e){
       freqEl.textContent = 'mikrofon nedostupný: ' + e.message;
@@ -293,7 +315,7 @@
     centsEl.textContent = '0 ct'; centsEl.style.color = 'var(--text-muted)';
     slider.style.left = '50%'; slider.style.background = 'var(--text-muted)';
     strBtns.forEach(b=>b.classList.remove('active'));
-    history = []; recent = []; drawTrace();
+    history = []; recent = []; lockedMidi = null; shown = null; lastGoodAt = 0; drawTrace();
   }
   btn.addEventListener('click', ()=> running ? stop() : start());
   drawTrace();
