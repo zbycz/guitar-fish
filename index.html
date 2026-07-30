@@ -81,6 +81,7 @@
   </div>
 
   <button id="toggle">Start</button>
+  <div class="hint">Světlé body = syrové měření, silná stopa = vyhlazená hodnota</div>
   <div class="hint">Vyžaduje mikrofon a HTTPS připojení</div>
 </div>
 
@@ -226,17 +227,26 @@
     ctx2d.beginPath(); ctx2d.moveTo(cx,0); ctx2d.lineTo(cx,H); ctx2d.stroke();
     const good = cssVar('--success-text');
     const off = cssVar('--text-primary');
+    const px = c => cx + (Math.max(-50, Math.min(50, c))/50) * (W/2 - 8);
+
+    ctx2d.fillStyle = cssVar('--text-muted'); ctx2d.globalAlpha = 0.45;
+    for(let i=0;i<history.length;i++){
+      const r = history[i].raw;
+      if(r === null) continue;
+      const y = history.length - 1 - i;
+      if(y < H) ctx2d.fillRect(px(r) - 1, y, 2, 2);
+    }
+    ctx2d.globalAlpha = 1;
+
     for(let i=0;i<history.length;i++){
       const h = history[i].smooth;
       if(h === null) continue;
       const y = history.length - 1 - i;
       if(y >= H) continue;
-      const clamped = Math.max(-50, Math.min(50, h));
-      const x = cx + (clamped/50) * (W/2 - 8);
       const inTune = Math.abs(h) <= 5;
       ctx2d.fillStyle = inTune ? good : off;
       const w = inTune ? 8 : 5;
-      ctx2d.fillRect(x - w/2, y, w, 3);
+      ctx2d.fillRect(px(h) - w/2, y, w, 3);
     }
   }
 
