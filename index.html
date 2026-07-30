@@ -96,10 +96,12 @@
   const canvas = document.getElementById('trace');
   const ctx2d = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height;
-  let audioCtx, analyser, buf, rafId, stream, running = false;
+  let audioCtx, analyser, buf, sig, dec, decimation = 1, rafId, stream, running = false;
   let history = [];
   let recent = [];
   const MEDIAN_WINDOW = 12;
+  const MIN_FREQ = 60, MAX_FREQ = 1300;
+  const RMS_GATE = 0.008, CLARITY_GATE = 0.55, PEAK_RATIO = 0.9;
 
   function cssVar(name){ return getComputedStyle(document.body).getPropertyValue(name).trim() || '#888'; }
 
@@ -118,26 +120,84 @@
     return { midi: rounded };
   }
 
-  function autoCorrelate(buffer, sampleRate){
-    let SIZE = buffer.length, rms = 0;
-    for(let i=0;i<SIZE;i++){ rms += buffer[i]*buffer[i]; }
-    rms = Math.sqrt(rms/SIZE);
-    if(rms < 0.01) return -1;
-    let r1=0, r2=SIZE-1, thres=0.2;
-    for(let i=0;i<SIZE/2;i++){ if(Math.abs(buffer[i])<thres){ r1=i; break; } }
-    for(let i=1;i<SIZE/2;i++){ if(Math.abs(buffer[SIZE-i])<thres){ r2=SIZE-i; break; } }
-    buffer = buffer.slice(r1,r2); SIZE = buffer.length;
-    const c = new Array(SIZE).fill(0);
-    for(let i=0;i<SIZE;i++) for(let j=0;j<SIZE-i;j++) c[i]+=buffer[j]*buffer[j+i];
-    let d=0; while(c[d]>c[d+1]) d++;
-    let maxval=-1, maxpos=-1;
-    for(let i=d;i<SIZE;i++){ if(c[i]>maxval){ maxval=c[i]; maxpos=i; } }
-    let T0 = maxpos;
-    if(T0<1) return -1;
-    const x1=c[T0-1], x2=c[T0], x3=c[T0+1];
-    const a=(x1+x3-2*x2)/2, b=(x3-x1)/2;
-    if(a) T0 = T0 - b/(2*a);
-    return sampleRate/T0;
+  function nsdfAt(x, W, lag){
+    let ac = 0, sq = 0;
+    for(let i=0;i<W;i++){
+      const a = x[i], b = x[i+lag];
+      ac += a*b; sq += a*a + b*b;
+    }
+    return sq > 0 ? 2*ac/sq : 0;
+  }
+
+  function parabolic(ym, y0, yp, x){
+    const a = (ym + yp - 2*y0)/2, b = (yp - ym)/2;
+    return a < 0 ? x - b/(2*a) : x;
+  }
+
+  function detectPitch(){
+    const N = buf.length;
+    let mean = 0;
+    for(let i=0;i<N;i++) mean += buf[i];
+    mean /= N;
+    let power = 0;
+    for(let i=0;i<N;i++){ const v = buf[i] - mean; sig[i] = v; power += v*v; }
+    if(Math.sqrt(power/N) < RMS_GATE) return null;
+
+    const D = decimation, M = dec.length;
+    for(let i=0;i<M;i++){
+      let s = 0;
+      for(let k=0;k<D;k++) s += sig[i*D + k];
+      dec[i] = s/D;
+    }
+
+    const rate = audioCtx.sampleRate;
+    const maxLagD = Math.min(M - 32, Math.floor(rate/D/MIN_FREQ));
+    const WD = M - maxLagD;
+    if(maxLagD < 4 || WD < 64) return null;
+
+    let lag = 1, v = 1;
+    while(lag <= maxLagD && (v = nsdfAt(dec, WD, lag)) > 0) lag++;
+
+    let peakLag = -1, peakVal = -1, globalVal = -1;
+    const peaks = [];
+    for(; lag <= maxLagD; lag++){
+      v = nsdfAt(dec, WD, lag);
+      if(v > 0){
+        if(v > peakVal){ peakVal = v; peakLag = lag; }
+      } else if(peakLag > 0){
+        peaks.push([peakLag, peakVal]);
+        if(peakVal > globalVal) globalVal = peakVal;
+        peakLag = -1; peakVal = -1;
+      }
+    }
+    if(peakLag > 0){
+      peaks.push([peakLag, peakVal]);
+      if(peakVal > globalVal) globalVal = peakVal;
+    }
+    if(!peaks.length || globalVal < CLARITY_GATE) return null;
+
+    const thr = PEAK_RATIO * globalVal;
+    let chosen = -1;
+    for(const p of peaks){ if(p[1] >= thr){ chosen = p[0]; break; } }
+    if(chosen < 1) return null;
+
+    const maxLagFull = maxLagD * D;
+    const WF = N - maxLagFull;
+    const lo = Math.max(2, chosen*D - D), hi = Math.min(maxLagFull - 1, chosen*D + D);
+    const vals = new Float64Array(hi - lo + 3);
+    for(let l = lo - 1; l <= hi + 1; l++) vals[l - lo + 1] = nsdfAt(sig, WF, l);
+    let rLag = -1, rVal = -1;
+    for(let l = lo; l <= hi; l++){
+      const x = vals[l - lo + 1];
+      if(x > rVal){ rVal = x; rLag = l; }
+    }
+    if(rLag < 2) return null;
+
+    const k = rLag - lo + 1;
+    const tau = parabolic(vals[k-1], vals[k], vals[k+1], rLag);
+    const freq = rate / tau;
+    if(!(freq >= MIN_FREQ && freq <= MAX_FREQ)) return null;
+    return { freq: freq, clarity: rVal };
   }
 
   function drawTrace(){
@@ -165,8 +225,9 @@
 
   function update(){
     analyser.getFloatTimeDomainData(buf);
-    const f = autoCorrelate(buf, audioCtx.sampleRate);
-    if(f > 60 && f < 1200){
+    const det = detectPitch();
+    if(det){
+      const f = det.freq;
       const inst = freqToNote(f);
       const refInst = freqFromMidi(inst.midi);
       const instCents = 1200 * Math.log2(f / refInst);
@@ -209,8 +270,12 @@
       stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation:false, noiseSuppression:false, autoGainControl:false } });
       audioCtx = new (window.AudioContext||window.webkitAudioContext)();
       analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 2048;
+      decimation = Math.max(1, Math.pow(2, Math.round(Math.log2(audioCtx.sampleRate/24000))));
+      analyser.fftSize = Math.min(32768, 2048 * decimation);
+      analyser.smoothingTimeConstant = 0;
       buf = new Float32Array(analyser.fftSize);
+      sig = new Float32Array(analyser.fftSize);
+      dec = new Float32Array(analyser.fftSize / decimation);
       audioCtx.createMediaStreamSource(stream).connect(analyser);
       running = true; btn.textContent = 'Stop'; history = []; recent = [];
       update();
