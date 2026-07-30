@@ -1,8 +1,3 @@
-Content is user-generated and unverified.
-
-
-1
-Learn how to customize
 <!DOCTYPE html>
 <html lang="cs">
 <head>
@@ -11,77 +6,47 @@ Learn how to customize
 <title>Kytarová ladička</title>
 <style>
   :root {
-    --bg: #f7f6f2;
-    --surface: #ffffff;
-    --surface-1: #f1efe8;
-    --text-primary: #2c2c2a;
-    --text-secondary: #5f5e5a;
-    --text-muted: #888780;
-    --border: rgba(0,0,0,0.10);
-    --border-strong: rgba(0,0,0,0.22);
-    --success-bg: #e1f5ee;
-    --success-text: #0f6e56;
-    --success-border: #5dcaa5;
-    --accent: #1d9e75;
+    --bg: #f7f6f2; --surface: #ffffff; --surface-1: #f1efe8;
+    --text-primary: #2c2c2a; --text-secondary: #5f5e5a; --text-muted: #888780;
+    --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.22);
+    --success-bg: #e1f5ee; --success-text: #0f6e56; --success-border: #5dcaa5; --accent: #1d9e75;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #1c1c1a;
-      --surface: #262624;
-      --surface-1: #2f2f2c;
-      --text-primary: #ececec;
-      --text-secondary: #b4b2a9;
-      --text-muted: #888780;
-      --border: rgba(255,255,255,0.12);
-      --border-strong: rgba(255,255,255,0.24);
-      --success-bg: #085041;
-      --success-text: #9fe1cb;
-      --success-border: #1d9e75;
-      --accent: #5dcaa5;
+      --bg: #1c1c1a; --surface: #262624; --surface-1: #2f2f2c;
+      --text-primary: #ececec; --text-secondary: #b4b2a9; --text-muted: #888780;
+      --border: rgba(255,255,255,0.12); --border-strong: rgba(255,255,255,0.24);
+      --success-bg: #085041; --success-text: #9fe1cb; --success-border: #1d9e75; --accent: #5dcaa5;
     }
   }
   * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--bg);
-    color: var(--text-primary);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    padding: 1rem;
-  }
-  .card {
-    width: 100%;
-    max-width: 440px;
-    background: var(--surface);
-    border: 0.5px solid var(--border);
-    border-radius: 16px;
-    padding: 2rem 1.5rem;
-    text-align: center;
-  }
-  h1 { font-size: 18px; font-weight: 500; margin: 0 0 1.5rem; color: var(--text-secondary); }
-  #note { font-size: 76px; font-weight: 500; color: var(--text-muted); line-height: 1; margin-bottom: 4px; }
-  #freq { font-size: 14px; color: var(--text-secondary); margin-bottom: 20px; }
-  #cents { font-size: 14px; color: var(--text-secondary); margin-bottom: 20px; min-height: 20px; }
-  .gauge { position: relative; height: 90px; margin-bottom: 20px; }
-  .gauge svg { width: 100%; height: 100%; }
-  .strings { display: flex; gap: 8px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; }
-  .strbtn {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 36px; height: 36px; border-radius: 50%;
-    border: 0.5px solid var(--border-strong);
-    font-size: 14px; color: var(--text-secondary);
-    background: var(--surface-1); transition: all 0.15s;
-  }
+  body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: var(--bg); color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 1rem; }
+  .card { width: 100%; max-width: 460px; background: var(--surface);
+    border: 0.5px solid var(--border); border-radius: 16px; padding: 2rem 1.5rem; text-align: center; }
+  h1 { font-size: 18px; font-weight: 500; margin: 0 0 1.25rem; color: var(--text-secondary); }
+  #note { font-size: 68px; font-weight: 500; color: var(--text-muted); line-height: 1; margin-bottom: 2px; }
+  #freq { font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; }
+  #cents { font-size: 22px; font-weight: 500; color: var(--text-muted); margin-bottom: 16px; min-height: 26px; }
+  .bar { position: relative; height: 44px; margin-bottom: 6px; background: var(--surface-1);
+    border-radius: 10px; border: 0.5px solid var(--border); }
+  .bar .center { position: absolute; left: 50%; top: 6px; bottom: 6px; width: 2px; background: var(--border-strong); transform: translateX(-50%); }
+  .bar .tick { position: absolute; top: 14px; bottom: 14px; width: 1px; background: var(--border); }
+  #slider { position: absolute; left: 50%; top: 4px; bottom: 4px; width: 6px; border-radius: 4px;
+    background: var(--text-muted); transform: translateX(-50%); transition: left 0.06s linear, background 0.15s; }
+  .scale { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted);
+    margin-bottom: 14px; padding: 0 2px; }
+  #trace { width: 100%; height: 180px; display: block; background: var(--surface-1);
+    border-radius: 10px; border: 0.5px solid var(--border); margin-bottom: 16px; }
+  .strings { display: flex; gap: 8px; justify-content: center; margin-bottom: 16px; flex-wrap: wrap; }
+  .strbtn { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px;
+    border-radius: 50%; border: 0.5px solid var(--border-strong); font-size: 14px;
+    color: var(--text-secondary); background: var(--surface-1); transition: all 0.15s; }
   .strbtn.active { background: var(--success-bg); color: var(--success-text); border-color: var(--success-border); }
-  button {
-    width: 150px; height: 44px; font-size: 15px;
-    border-radius: 10px; border: 0.5px solid var(--border-strong);
-    background: var(--surface-1); color: var(--text-primary);
-    cursor: pointer; transition: all 0.15s;
-  }
+  button { width: 150px; height: 44px; font-size: 15px; border-radius: 10px;
+    border: 0.5px solid var(--border-strong); background: var(--surface-1); color: var(--text-primary);
+    cursor: pointer; transition: all 0.15s; }
   button:hover { border-color: var(--accent); }
   button:active { transform: scale(0.98); }
   .hint { font-size: 12px; color: var(--text-muted); margin-top: 16px; }
@@ -92,21 +57,19 @@ Learn how to customize
   <h1>Kytarová ladička</h1>
   <div id="note">–</div>
   <div id="freq">stiskni start a zahraj strunu</div>
+  <div id="cents">0 ct</div>
 
-  <div class="gauge">
-    <svg viewBox="0 0 400 90">
-      <line x1="200" y1="10" x2="200" y2="60" stroke="var(--border-strong)" stroke-width="1.5"/>
-      <line x1="60" y1="35" x2="340" y2="35" stroke="var(--border)" stroke-width="1"/>
-      <line x1="130" y1="30" x2="130" y2="40" stroke="var(--border)" stroke-width="1"/>
-      <line x1="270" y1="30" x2="270" y2="40" stroke="var(--border)" stroke-width="1"/>
-      <polygon id="needle" points="200,58 195,72 205,72" fill="var(--text-muted)" style="transition: transform 0.08s linear, fill 0.15s;"/>
-      <text x="60" y="82" font-size="11" fill="var(--text-muted)" text-anchor="middle">-50</text>
-      <text x="200" y="82" font-size="11" fill="var(--text-muted)" text-anchor="middle">0</text>
-      <text x="340" y="82" font-size="11" fill="var(--text-muted)" text-anchor="middle">+50 ct</text>
-    </svg>
+  <div class="bar">
+    <div class="center"></div>
+    <div class="tick" style="left:20%"></div>
+    <div class="tick" style="left:80%"></div>
+    <div id="slider"></div>
+  </div>
+  <div class="scale">
+    <span>-50</span><span>utáhni ←</span><span>0</span><span>→ povol</span><span>+50 ct</span>
   </div>
 
-  <div id="cents"></div>
+  <canvas id="trace" width="460" height="180"></canvas>
 
   <div class="strings">
     <span data-str="E2" class="strbtn">E</span>
@@ -127,19 +90,32 @@ Learn how to customize
   const noteEl = document.getElementById('note');
   const freqEl = document.getElementById('freq');
   const centsEl = document.getElementById('cents');
-  const needle = document.getElementById('needle');
+  const slider = document.getElementById('slider');
   const btn = document.getElementById('toggle');
   const strBtns = [...document.querySelectorAll('.strbtn')];
+  const canvas = document.getElementById('trace');
+  const ctx2d = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
   let audioCtx, analyser, buf, rafId, stream, running = false;
+  let history = [];
+  let recent = [];
+  const MEDIAN_WINDOW = 12;
+
+  function cssVar(name){ return getComputedStyle(document.body).getPropertyValue(name).trim() || '#888'; }
+
+  function median(arr){
+    if(!arr.length) return null;
+    const s = [...arr].sort((a,b)=>a-b);
+    const m = Math.floor(s.length/2);
+    return s.length % 2 ? s[m] : (s[m-1]+s[m])/2;
+  }
+
+  function freqFromMidi(m){ return 440 * Math.pow(2,(m-69)/12); }
 
   function freqToNote(f){
     const n = 12 * (Math.log2(f/440)) + 69;
     const rounded = Math.round(n);
-    const name = NOTES[((rounded % 12) + 12) % 12];
-    const octave = Math.floor(rounded/12) - 1;
-    const refFreq = 440 * Math.pow(2, (rounded-69)/12);
-    const cents = Math.floor(1200 * Math.log2(f/refFreq));
-    return { name, octave, cents, id: name+octave };
+    return { midi: rounded };
   }
 
   function autoCorrelate(buffer, sampleRate){
@@ -164,25 +140,67 @@ Learn how to customize
     return sampleRate/T0;
   }
 
+  function drawTrace(){
+    ctx2d.clearRect(0,0,W,H);
+    const cx = W/2;
+    ctx2d.strokeStyle = cssVar('--border'); ctx2d.lineWidth = 1;
+    [0.2, 0.8].forEach(p=>{ ctx2d.beginPath(); ctx2d.moveTo(W*p,0); ctx2d.lineTo(W*p,H); ctx2d.stroke(); });
+    ctx2d.strokeStyle = cssVar('--border-strong');
+    ctx2d.beginPath(); ctx2d.moveTo(cx,0); ctx2d.lineTo(cx,H); ctx2d.stroke();
+    const good = cssVar('--success-text');
+    const off = cssVar('--text-primary');
+    for(let i=0;i<history.length;i++){
+      const h = history[i];
+      if(h === null) continue;
+      const y = history.length - 1 - i;
+      if(y >= H) continue;
+      const clamped = Math.max(-50, Math.min(50, h));
+      const x = cx + (clamped/50) * (W/2 - 8);
+      const inTune = Math.abs(h) <= 5;
+      ctx2d.fillStyle = inTune ? good : off;
+      const w = inTune ? 8 : 5;
+      ctx2d.fillRect(x - w/2, y, w, 3);
+    }
+  }
+
   function update(){
     analyser.getFloatTimeDomainData(buf);
     const f = autoCorrelate(buf, audioCtx.sampleRate);
     if(f > 60 && f < 1200){
-      const n = freqToNote(f);
-      noteEl.textContent = n.name;
-      noteEl.style.color = 'var(--text-primary)';
-      freqEl.textContent = f.toFixed(1) + ' Hz · ' + n.id;
-      const clamped = Math.max(-50, Math.min(50, n.cents));
-      needle.setAttribute('transform', 'rotate('+(clamped*0.9)+' 200 60)');
-      const inTune = Math.abs(n.cents) <= 5;
-      needle.setAttribute('fill', inTune ? 'var(--success-text)' : 'var(--text-primary)');
-      if(inTune){ centsEl.textContent = '✓ naladěno'; centsEl.style.color = 'var(--success-text)'; }
-      else { centsEl.textContent = (n.cents>0?'+':'') + n.cents + ' ct · ' + (n.cents>0?'povol':'utáhni'); centsEl.style.color = 'var(--text-secondary)'; }
-      strBtns.forEach(b => b.classList.toggle('active', b.dataset.str === n.id));
+      const inst = freqToNote(f);
+      const refInst = freqFromMidi(inst.midi);
+      const instCents = 1200 * Math.log2(f / refInst);
+
+      recent.push({ midi: inst.midi, cents: instCents });
+      if(recent.length > MEDIAN_WINDOW) recent.shift();
+
+      const midiMed = median(recent.map(r=>r.midi));
+      const targetMidi = Math.round(midiMed);
+      const centsMed = median(recent.filter(r=>r.midi===targetMidi).map(r=>r.cents));
+
+      const name = NOTES[((targetMidi % 12) + 12) % 12];
+      const octave = Math.floor(targetMidi/12) - 1;
+      const cents = Math.round(centsMed);
+
+      noteEl.textContent = name; noteEl.style.color = 'var(--text-primary)';
+      freqEl.textContent = f.toFixed(1) + ' Hz · ' + name + octave;
+      const clamped = Math.max(-50, Math.min(50, centsMed));
+      slider.style.left = (50 + (clamped/50)*40) + '%';
+      const inTune = Math.abs(cents) <= 4;
+      slider.style.background = inTune ? 'var(--success-text)' : 'var(--text-primary)';
+      centsEl.textContent = inTune ? '✓ naladěno' : ((cents>0?'+':'') + cents + ' ct');
+      centsEl.style.color = inTune ? 'var(--success-text)' : 'var(--text-primary)';
+      strBtns.forEach(b => b.classList.toggle('active', b.dataset.str === name+octave));
+      history.push(instCents);
     } else {
       noteEl.style.color = 'var(--text-muted)';
-      centsEl.textContent = '';
+      centsEl.textContent = '– ct'; centsEl.style.color = 'var(--text-muted)';
+      slider.style.background = 'var(--text-muted)';
+      history.push(null);
+      if(recent.length) recent.shift();
     }
+    if(history.length > H) history.shift();
+    drawTrace();
     rafId = requestAnimationFrame(update);
   }
 
@@ -194,7 +212,7 @@ Learn how to customize
       analyser.fftSize = 2048;
       buf = new Float32Array(analyser.fftSize);
       audioCtx.createMediaStreamSource(stream).connect(analyser);
-      running = true; btn.textContent = 'Stop';
+      running = true; btn.textContent = 'Stop'; history = []; recent = [];
       update();
     } catch(e){
       freqEl.textContent = 'mikrofon nedostupný: ' + e.message;
@@ -207,13 +225,14 @@ Learn how to customize
     if(audioCtx) audioCtx.close();
     noteEl.textContent = '–'; noteEl.style.color = 'var(--text-muted)';
     freqEl.textContent = 'stiskni start a zahraj strunu';
-    centsEl.textContent = '';
+    centsEl.textContent = '0 ct'; centsEl.style.color = 'var(--text-muted)';
+    slider.style.left = '50%'; slider.style.background = 'var(--text-muted)';
     strBtns.forEach(b=>b.classList.remove('active'));
-    needle.setAttribute('transform',''); needle.setAttribute('fill','var(--text-muted)');
+    history = []; recent = []; drawTrace();
   }
   btn.addEventListener('click', ()=> running ? stop() : start());
+  drawTrace();
 })();
 </script>
 </body>
 </html>
-Link copied
