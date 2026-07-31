@@ -115,6 +115,7 @@
   const ctx2d = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height;
   let audioCtx, analyser, buf, sig, dec, decimation = 1, rafId, stream, running = false;
+  let wakeLock = null;
   let history = [];
   let recent = [];
   let lockedMidi = null, lastGoodAt = 0, shown = null;
@@ -124,6 +125,22 @@
   const WINDOW_MS = 450, CONSENSUS = 0.6, TRIM = 0.25, HOLD_MS = 700, RELOCK_CENTS = 65;
 
   function cssVar(name){ return getComputedStyle(document.body).getPropertyValue(name).trim() || '#888'; }
+
+  async function acquireWakeLock(){
+    if(!('wakeLock' in navigator) || wakeLock) return;
+    try {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', ()=>{ wakeLock = null; });
+    } catch(e){ wakeLock = null; }
+  }
+  function releaseWakeLock(){
+    if(!wakeLock) return;
+    const wl = wakeLock; wakeLock = null;
+    wl.release().catch(()=>{});
+  }
+  document.addEventListener('visibilitychange', ()=>{
+    if(running && document.visibilityState === 'visible') acquireWakeLock();
+  });
 
   function trimmedMean(arr){
     if(!arr.length) return null;
@@ -332,6 +349,7 @@
       audioCtx.createMediaStreamSource(stream).connect(hp1).connect(hp2).connect(analyser);
       running = true; btn.textContent = 'Stop';
       history = []; recent = []; lockedMidi = null; shown = null; lastGoodAt = 0;
+      acquireWakeLock();
       update();
     } catch(e){
       freqEl.textContent = 'mikrofon nedostupný: ' + e.message;
@@ -340,6 +358,7 @@
   function stop(){
     running = false; btn.textContent = 'Start';
     cancelAnimationFrame(rafId);
+    releaseWakeLock();
     if(stream) stream.getTracks().forEach(t=>t.stop());
     if(audioCtx) audioCtx.close();
     noteEl.textContent = '–'; noteEl.style.color = 'var(--text-muted)';
